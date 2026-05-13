@@ -74,53 +74,50 @@ export default function GroupCard({ group, members, onAddMember, onRemoveMember,
 
       <div className="px-4 py-3 flex flex-col gap-3 flex-1">
         {/* Theme (collaborative only) */}
-        {isCollaborative && (
-          <div>
-            {!editingTheme ? (
-              <div
-                className="flex items-start gap-2 cursor-pointer group"
-                onClick={() => {
-                  setThemeInput(group.theme ?? "");
-                  setEditingTheme(true);
-                }}
-              >
-                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-0.5">Theme</span>
-                {group.theme ? (
-                  <span className="text-sm text-gray-700 group-hover:text-blue-700 transition-colors">{group.theme}</span>
-                ) : (
-                  <span className="text-sm text-gray-300 italic group-hover:text-blue-400 transition-colors">
-                    Click to set a theme...
-                  </span>
-                )}
-              </div>
+        {isCollaborative && !editingTheme && (
+          <div
+            className="flex items-start gap-2 cursor-pointer group"
+            onClick={() => {
+              setThemeInput(group.theme ?? "");
+              setEditingTheme(true);
+            }}
+          >
+            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-0.5">Theme</span>
+            {group.theme ? (
+              <span className="text-sm text-gray-700 group-hover:text-blue-700 transition-colors">{group.theme}</span>
             ) : (
-              <form onSubmit={handleThemeSave} className="flex gap-1.5">
-                <input
-                  autoFocus
-                  type="text"
-                  value={themeInput}
-                  onChange={(e) => setThemeInput(e.target.value)}
-                  placeholder="e.g. Building RAG pipelines"
-                  className="flex-1 text-sm border border-blue-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-0"
-                  maxLength={200}
-                />
-                <button
-                  type="submit"
-                  disabled={savingTheme || !themeInput.trim()}
-                  className="text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors shrink-0"
-                >
-                  {savingTheme ? "..." : "Save"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingTheme(false)}
-                  className="text-xs text-gray-400 px-2 py-1.5 hover:text-gray-600 shrink-0"
-                >
-                  ✕
-                </button>
-              </form>
+              <span className="text-sm text-gray-300 italic group-hover:text-blue-400 transition-colors">
+                Click to set a theme...
+              </span>
             )}
           </div>
+        )}
+        {isCollaborative && editingTheme && (
+          <form onSubmit={handleThemeSave} className="flex gap-1.5">
+            <input
+              autoFocus
+              type="text"
+              value={themeInput}
+              onChange={(e) => setThemeInput(e.target.value)}
+              placeholder="e.g. Building RAG pipelines"
+              className="flex-1 text-sm border border-blue-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-0"
+              maxLength={200}
+            />
+            <button
+              type="submit"
+              disabled={savingTheme || !themeInput.trim()}
+              className="text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded-lg disabled:opacity-50 hover:bg-blue-700 transition-colors shrink-0"
+            >
+              {savingTheme ? "..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingTheme(false)}
+              className="text-xs text-gray-400 px-2 py-1.5 hover:text-gray-600 shrink-0"
+            >
+              ✕
+            </button>
+          </form>
         )}
 
         {/* Members list */}

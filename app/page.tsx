@@ -1,9 +1,47 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import type { HuddleGroup, Member } from "@/lib/types";
 import GroupCard from "@/components/GroupCard";
+
+interface GroupSectionProps {
+  title: string;
+  emoji: string;
+  badge: string;
+  badgeClass: string;
+  groups: HuddleGroup[];
+  gridCols: string;
+  membersByGroupId: Record<number, Member[]>;
+  onAddMember: (groupId: number, name: string) => Promise<void>;
+  onRemoveMember: (memberId: number) => Promise<void>;
+  onUpdateTheme: (groupId: number, theme: string) => Promise<void>;
+  className?: string;
+}
+
+function GroupSection({ title, emoji, badge, badgeClass, groups, gridCols, membersByGroupId, onAddMember, onRemoveMember, onUpdateTheme, className }: GroupSectionProps) {
+  return (
+    <section className={className}>
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-2xl">{emoji}</span>
+        <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+        <span className={`${badgeClass} text-xs font-medium px-2.5 py-1 rounded-full`}>{badge}</span>
+      </div>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridCols} gap-5`}>
+        {groups.map((group) => (
+          <GroupCard
+            key={group.id}
+            group={group}
+            members={membersByGroupId[group.id] ?? []}
+            onAddMember={onAddMember}
+            onRemoveMember={onRemoveMember}
+            onUpdateTheme={onUpdateTheme}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const [groups, setGroups] = useState<HuddleGroup[]>([]);
@@ -17,11 +55,10 @@ export default function Home() {
     ]);
     if (groupData) setGroups(groupData);
     if (memberData) setMembers(memberData);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchData();
+    fetchData().then(() => setLoading(false));
 
     const membersChannel = supabase
       .channel("members-changes")
@@ -55,8 +92,16 @@ export default function Home() {
     await supabase.from("huddle_groups").update({ theme: trimmed }).eq("id", groupId);
   };
 
-  const collaborative = groups.filter((g) => g.group_type === "collaborative");
-  const individual = groups.filter((g) => g.group_type === "individual");
+  const membersByGroupId = useMemo(() => {
+    const map: Record<number, Member[]> = {};
+    for (const m of members) {
+      (map[m.group_id] ??= []).push(m);
+    }
+    return map;
+  }, [members]);
+
+  const collaborative = useMemo(() => groups.filter((g) => g.group_type === "collaborative"), [groups]);
+  const individual = useMemo(() => groups.filter((g) => g.group_type === "individual"), [groups]);
 
   if (loading) {
     return (
@@ -75,49 +120,32 @@ export default function Home() {
         </p>
       </div>
 
-      <section className="mb-12">
-        <div className="flex items-center gap-3 mb-5">
-          <span className="text-2xl">🤝</span>
-          <h2 className="text-xl font-semibold text-gray-800">Collaborative Groups</h2>
-          <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
-            Commit to meet &amp; work together
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {collaborative.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              members={members.filter((m) => m.group_id === group.id)}
-              onAddMember={handleAddMember}
-              onRemoveMember={handleRemoveMember}
-              onUpdateTheme={handleUpdateTheme}
-            />
-          ))}
-        </div>
-      </section>
+      <GroupSection
+        title="Collaborative Groups"
+        emoji="🤝"
+        badge="Commit to meet & work together"
+        badgeClass="bg-blue-100 text-blue-700"
+        groups={collaborative}
+        gridCols="lg:grid-cols-3"
+        membersByGroupId={membersByGroupId}
+        onAddMember={handleAddMember}
+        onRemoveMember={handleRemoveMember}
+        onUpdateTheme={handleUpdateTheme}
+        className="mb-12"
+      />
 
-      <section>
-        <div className="flex items-center gap-3 mb-5">
-          <span className="text-2xl">🧑‍💻</span>
-          <h2 className="text-xl font-semibold text-gray-800">Individual Groups</h2>
-          <span className="bg-amber-100 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full">
-            Working solo this week
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {individual.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              members={members.filter((m) => m.group_id === group.id)}
-              onAddMember={handleAddMember}
-              onRemoveMember={handleRemoveMember}
-              onUpdateTheme={handleUpdateTheme}
-            />
-          ))}
-        </div>
-      </section>
+      <GroupSection
+        title="Individual Groups"
+        emoji="🧑‍💻"
+        badge="Working solo this week"
+        badgeClass="bg-amber-100 text-amber-700"
+        groups={individual}
+        gridCols="lg:grid-cols-4"
+        membersByGroupId={membersByGroupId}
+        onAddMember={handleAddMember}
+        onRemoveMember={handleRemoveMember}
+        onUpdateTheme={handleUpdateTheme}
+      />
     </main>
   );
 }
