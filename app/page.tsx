@@ -60,6 +60,7 @@ export default function Home() {
   useEffect(() => {
     fetchData().then(() => setLoading(false));
 
+    // Realtime subscriptions for instant cross-browser updates
     const membersChannel = supabase
       .channel("members-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "members" }, fetchData)
@@ -70,26 +71,38 @@ export default function Home() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "huddle_groups" }, fetchData)
       .subscribe();
 
+    // Polling fallback — keeps all open tabs in sync every 5s
+    const pollInterval = setInterval(fetchData, 5000);
+
     return () => {
       supabase.removeChannel(membersChannel);
       supabase.removeChannel(groupsChannel);
+      clearInterval(pollInterval);
     };
   }, [fetchData]);
 
   const handleAddMember = async (groupId: number, name: string) => {
     const trimmed = name.trim();
     if (!trimmed || trimmed.length > 100) return;
+    // Remove from any other group they're already in (case-insensitive)
+    const existing = members.find((m) => m.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      await supabase.from("members").delete().eq("id", existing.id);
+    }
     await supabase.from("members").insert({ group_id: groupId, name: trimmed });
+    fetchData();
   };
 
   const handleRemoveMember = async (memberId: number) => {
     await supabase.from("members").delete().eq("id", memberId);
+    fetchData();
   };
 
   const handleUpdateTheme = async (groupId: number, theme: string) => {
     const trimmed = theme.trim();
     if (!trimmed) return;
     await supabase.from("huddle_groups").update({ theme: trimmed }).eq("id", groupId);
+    fetchData();
   };
 
   const membersByGroupId = useMemo(() => {

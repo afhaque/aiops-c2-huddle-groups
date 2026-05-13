@@ -127,12 +127,12 @@ export default function GroupCard({ group, members, onAddMember, onRemoveMember,
           ) : (
             <ul className="space-y-1">
               {members.map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-2 group">
+                <li key={m.id} className="flex items-center justify-between gap-2">
                   <span className="text-sm text-gray-700 truncate">{m.name}</span>
                   <button
                     onClick={() => onRemoveMember(m.id)}
-                    className="text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-xs"
-                    title="Remove"
+                    className="text-gray-300 hover:text-red-400 transition-colors shrink-0 text-xs"
+                    title="Leave group"
                   >
                     ✕
                   </button>
